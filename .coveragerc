@@ -1,0 +1,3 @@
+[run]
+source = settings_model
+omit = settings_model/config.py
