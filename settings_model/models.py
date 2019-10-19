@@ -118,17 +118,20 @@ class SettingsModel(models.Model):
             return super().save(*args, **kwargs)
 
         # get active settings
-        active_settings = list(type(self).objects.filter(is_active=True))
+        actives = list(type(self).objects.filter(is_active=True))
 
         # active management
-        if not active_settings:
+        if not actives or (self in actives and len(actives) == 1):
             # set as active if there are none
             self.is_active = True
         else:
-            # disable extra active settings
+            # build list of settings that need to be deactivated
             if not self.is_active:
-                active_settings = active_settings[1:]
-            for s in active_settings:
+                bad_actives = actives[1:]
+            else:
+                bad_actives = [x for x in actives if x is not self]
+            # deactivate bad settings
+            for s in bad_actives:
                 s.is_active = False
                 s.save(raw=True)
 

@@ -37,7 +37,7 @@ of equipment, and things like timezone, hostname, or SMTP settings may need to b
 editable from the UI.
 
 **The Solution**: This app implements a base ``SettingsModel`` class that allows you to
-expose settings to the database.
+expose settings to a user interface via the database.
 
 
 How to Use
@@ -47,7 +47,11 @@ How to Use
 
     $ pip install django-settings-model
 
-Include ``settings_model`` in your ``INSTALLED_APPS``.
+You can either create your own custom Settings model, inheriting from
+``settings_model.models.SettingsModel``. An example implementation is provided in the
+``settings_model.models.Settings`` model. If you include ``settings_model`` in your
+``INSTALLED_APPS``, then that model will be migrated to your database when you run
+``python3 manage.py migrate`` and you will see the settings in the Admin site.
 
 
 Settings
