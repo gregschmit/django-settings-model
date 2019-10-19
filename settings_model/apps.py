@@ -8,4 +8,5 @@ class CustomConfig(AppConfig):
     def ready(self, *args, **kwargs):
         # run settings initializer
         from .models import Settings
+
         Settings.init()

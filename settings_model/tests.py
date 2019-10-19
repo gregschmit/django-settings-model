@@ -12,7 +12,6 @@ from .settings import get_setting
 
 
 class SettingsTestCase(TestCase):
-
     def test_bad_setting(self):
         self.assertIsNone(get_setting("INTENTIONALLY_BAD_VARIABLE"))
 
@@ -38,6 +37,7 @@ class SettingsModelTestCase(TestCase):
 
     def test_reboot_server(self):
         self.settings.reboot_server()
+
 
 class SettingsModelAdminTestCase(TestCase):
     """

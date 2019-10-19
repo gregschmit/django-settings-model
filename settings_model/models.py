@@ -150,10 +150,14 @@ class SettingsModel(models.Model):
         # get reboot files
         touch_files = get_setting("SETTINGS_MODEL_REBOOT_FILES")
         if not touch_files:
-            touch_files = [os.path.join(get_setting("BASE_DIR"), "manage.py")]  # dev server
+            touch_files = [
+                os.path.join(get_setting("BASE_DIR"), "manage.py")
+            ]  # dev server
             try:
                 touch_files.append(
-                    sys.modules[get_setting("WSGI_APPLICATION").rsplit(".", 1)[0]].__file__
+                    sys.modules[
+                        get_setting("WSGI_APPLICATION").rsplit(".", 1)[0]
+                    ].__file__
                 )  # wsgi (apache/nginx)
             except (AttributeError, IndexError):
                 pass
