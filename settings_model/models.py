@@ -6,6 +6,7 @@ import sys
 from django.conf import settings
 from django.db import models, transaction
 from django.db.utils import OperationalError
+from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 
 from .settings import get_setting
@@ -189,10 +190,26 @@ class Settings(SettingsModel):
         ("allowed_hosts", "ALLOWED_HOSTS", True, True),
     ]
 
+    class Meta:
+        verbose_name = verbose_name_plural = "Settings"
+
+    @classmethod
+    def check_secret_key(cls):
+        """
+        Attempt to get the active settings, and if the secret key is set to the default
+        one, then create a new randomized secret key.
+        """
+        try:
+            s = cls.objects.filter(is_active=True).first()
+            if s and s.secret_key == "not-a-very-good-secret":
+                chars = 'abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)'
+                s.secret_key = get_random_string(50, chars)
+                s.save()
+        except OperationalError:
+            print("settings_model: db not ready")
+            return
+
     def encode_setting(self, field):
         if field is self.allowed_hosts:
             return str(field)
         return field.__repr__()
-
-    class Meta:
-        verbose_name = verbose_name_plural = "Settings"

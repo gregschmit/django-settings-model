@@ -10,3 +10,4 @@ class CustomConfig(AppConfig):
         from .models import Settings
 
         Settings.init()
+        Settings.check_secret_key()
