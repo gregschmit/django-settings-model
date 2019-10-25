@@ -53,6 +53,10 @@ You can either create your own custom Settings model, inheriting from
 ``INSTALLED_APPS``, then that model will be migrated to your database when you run
 ``python3 manage.py migrate`` and you will see the settings in the Admin site.
 
+If you create a custom Settings model, then ensure you call its ``.init()`` class method
+in the application's ``AppConfig.ready()`` method. This will update the settings with
+the true values (and optionally create an initial settings model instance) on startup.
+
 
 Settings
 --------

@@ -104,36 +104,22 @@ class SettingsModel(models.Model):
         with open(CONFIG_FILE, "w") as f:
             f.write(text)
 
+    @transaction.atomic
     def save(self, *args, **kwargs):
         """
         Save this instance, check to ensure only one instance is active, and reboot, if
         necessary.
         """
         # extract custom kwargs
-        raw = kwargs.pop("raw", False)
         reboot = kwargs.pop("reboot", True)
 
-        # skip magic and just save
-        if raw:
-            return super().save(*args, **kwargs)
-
-        # get active settings
-        actives = list(type(self).objects.filter(is_active=True))
-
-        # active management
-        if not actives or (self in actives and len(actives) == 1):
-            # set as active if there are none
-            self.is_active = True
+        # deactivate extra settings if needed
+        actives = type(self).objects.filter(is_active=True).exclude(pk=self.pk)
+        if self.is_active:
+            actives.update(is_active=False)
         else:
-            # build list of settings that need to be deactivated
-            if not self.is_active:
-                bad_actives = actives[1:]
-            else:
-                bad_actives = [x for x in actives if x is not self]
-            # deactivate bad settings
-            for s in bad_actives:
-                s.is_active = False
-                s.save(raw=True)
+            active = actives.first()
+            actives.exclude(pk=active.pk).update(is_active=False)
 
         # if we are saving an active settings instance, reboot the web server
         if self.is_active:
