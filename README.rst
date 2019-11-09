@@ -47,11 +47,21 @@ How to Use
 
     $ pip install django-settings-model
 
-You can either create your own custom Settings model, inheriting from
-``settings_model.models.SettingsModel``. An example implementation is provided in the
-``settings_model.models.Settings`` model. If you include ``settings_model`` in your
-``INSTALLED_APPS``, then that model will be migrated to your database when you run
-``python3 manage.py migrate`` and you will see the settings in the Admin site.
+
+You can either create your own custom settings model, inheriting from
+``settings_model.models.SettingsModel``, or you can use the example implementation
+provided in the ``settings_model.models.Settings`` model. If you include
+``settings_model`` in your ``INSTALLED_APPS``, then that model will be migrated to your
+database when you run ``python3 manage.py migrate`` and you will see the settings in the
+admin site. You need to add the following to the end of your ``settings.py`` file:
+
+.. code-block:: python
+
+    try:
+        from .model_settings import *
+    except:
+        pass
+
 
 If you create a custom Settings model, then ensure you call its ``.init()`` class method
 in the application's ``AppConfig.ready()`` method. This will update the settings with
