@@ -6,7 +6,7 @@ import sys
 
 from django.conf import settings
 from django.db import models, transaction
-from django.db.utils import OperationalError
+from django.db.utils import Error as DBError
 from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 
@@ -92,7 +92,7 @@ class SettingsModel(models.Model):
             elif cls.CREATE_INITIAL:
                 s = cls()
                 s.read_settings()
-        except OperationalError:
+        except DBError:
             print("settings_model: db not ready")
             return
 
@@ -225,7 +225,7 @@ class Settings(SettingsModel):
                 chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)"
                 s.secret_key = get_random_string(50, chars)
                 s.save()
-        except OperationalError:
+        except DBError:
             print("settings_model: db not ready")
             return
 
