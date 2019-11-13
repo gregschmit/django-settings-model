@@ -48,12 +48,13 @@ How to Use
     $ pip install django-settings-model
 
 
-You can either create your own custom settings model, inheriting from
-``settings_model.models.SettingsModel``, or you can use the example implementation
-provided in the ``settings_model.models.Settings`` model. If you include
-``settings_model`` in your ``INSTALLED_APPS``, then that model will be migrated to your
-database when you run ``python3 manage.py migrate`` and you will see the settings in the
-admin site. You need to add the following to the end of your ``settings.py`` file:
+You can use the builtin ``Settings`` model by including this app (``settings_model``) in
+your ``INSTALLED_APPS`` and running migrations, or you can create your own custom
+settings model, inheriting from ``settings_model.models.SettingsModel``. If you want to
+build a custom settings Model, use the ``Settings`` model as a reference implementation.
+
+For the included ``Settings`` model, you need to add the following to the end of your
+``settings.py`` file:
 
 .. code-block:: python
 
@@ -63,16 +64,18 @@ admin site. You need to add the following to the end of your ``settings.py`` fil
         pass
 
 
-If you create a custom Settings model, then ensure you call its ``.init()`` class method
-in the application's ``AppConfig.ready()`` method. This will update the settings with
-the true values (and optionally create an initial settings model instance) on startup.
+If you create a custom Settings model, then ensure you set the ``__settings_filename__``
+appropriately (avoid conflicts with other settings models), and ensure you call its
+``.init()`` class method in the application's ``AppConfig.ready()`` method. This will
+update the settings with the true values (and optionally create an initial settings
+model instance) on startup.
 
 
 Settings
 --------
 
 - ``SETTINGS_MODEL_REBOOT_FILES`` (default ``[]``): This is a list of files that should
-  be touched when the settings model is saved to signal to the webserver to update. If
+  be touched when the settings model is saved to signal to the webserver to reboot. If
   it is falsy, then the system will try to find and touch the file
   ``BASE_DIR/manage.py`` and the ``wsgi.py`` file defined by ``WSGI_APPLICATION``.
 
