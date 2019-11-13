@@ -35,8 +35,8 @@ class SettingsModelTestCase(TestCase):
         self.settings.save()
         self.assertEqual(self.settings.debug_mode, not old_debug)
 
-    def test_reboot_server(self):
-        self.settings.reboot_server()
+    def test_write_and_reboot(self):
+        self.settings.write_and_reboot()
 
 
 class SettingsModelAdminTestCase(TestCase):
