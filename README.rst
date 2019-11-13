@@ -32,12 +32,18 @@ implementation that you can use, the abstract model ``SettingsModel`` can be use
 construct your own settings model(s), and things like webserver restarts are handled in
 the abstract model class.
 
-**The Problem**: Sometimes you want to build an app that can run on an arbitrary piece
-of equipment, and things like timezone, hostname, or SMTP settings may need to be
+**The Problem**: Sometimes you want to build an app that can be managed by
+non-developers, and things like timezone, hostname, or SMTP settings may need to be
 editable from the UI.
 
 **The Solution**: This app implements a base ``SettingsModel`` class that allows you to
-expose settings to a user interface via the database.
+expose settings to a user interface via the database. It writes these stub settings to
+separate files which you try/include at the end of your main settings file. This way
+you have sensible defaults, but when the user created/edits a model file in the UI,
+those settings override. There is a mechanism to touch the ``wsgi.py``/``manage.py``
+files when saving, so the only thing left to do is either configure your web server to
+watch those files and reboot when they are touched, or use a tool like ``incrond`` to
+watch those files and trigger your webserver to reboot when they are touched.
 
 
 How to Use

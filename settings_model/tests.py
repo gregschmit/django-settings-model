@@ -36,7 +36,7 @@ class SettingsModelTestCase(TestCase):
         self.assertEqual(self.settings.debug_mode, not old_debug)
 
     def test_write_and_reboot(self):
-        self.settings.write_and_reboot()
+        self.settings.write_and_signal_reboot()
 
 
 class SettingsModelAdminTestCase(TestCase):

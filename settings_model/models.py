@@ -142,11 +142,11 @@ class SettingsModel(models.Model):
         # if we are saving an active settings instance, reboot the web server
         if self.is_active:
             if reboot:
-                transaction.on_commit(lambda: self.write_and_reboot())
+                transaction.on_commit(lambda: self.write_and_signal_reboot())
         return super().save(*args, **kwargs)
 
     @staticmethod
-    def touch_reboot_files():
+    def signal_reboot():
         """
         Find and touch the reboot files to signal the server to restart.
         """
@@ -176,16 +176,16 @@ class SettingsModel(models.Model):
             else:
                 print("settings_model:  - {} (skipped, doesn't exist)".format(f))
 
-    def write_and_reboot(self, commit=True):
+    def write_and_signal_reboot(self, commit=True):
         """
-        Commit the configuration to disk and call `touch_reboot_files`.
+        Commit the configuration to disk and call `signal_reboot`.
         """
         if commit:
             print("settings_model: committing config to disk...")
             self.write_settings()
 
         # signal reboot
-        self.touch_reboot_files()
+        self.signal_reboot()
 
 
 class Settings(SettingsModel):
