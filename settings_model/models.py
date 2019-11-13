@@ -85,6 +85,7 @@ class SettingsModel(models.Model):
         """
         See if we have settings. If so, read the actual settings values into it.
         """
+        print("settings_model: running settings init")
         try:
             s = cls.objects.filter(is_active=True).first()
             if s:
@@ -92,8 +93,10 @@ class SettingsModel(models.Model):
             elif cls.CREATE_INITIAL:
                 s = cls()
                 s.read_settings()
-        except DBError:
-            print("settings_model: db not ready")
+        except DBError as e:
+            print("settings_model: db not ready:")
+            print(e)
+            print("settings_model: ----------")
             return
 
     def read_settings(self):
@@ -226,14 +229,17 @@ class Settings(SettingsModel):
         Attempt to get the active settings, and if the secret key is set to the default
         one, then create a new randomized secret key.
         """
+        print("settings_model: attempting to check the secret key...")
         try:
             s = cls.objects.filter(is_active=True).first()
             if s and s.secret_key == "not-a-very-good-secret":
                 chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)"
                 s.secret_key = get_random_string(50, chars)
                 s.save()
-        except DBError:
-            print("settings_model: db not ready")
+        except DBError as e:
+            print("settings_model: db not ready:")
+            print(e)
+            print("settings_model: ----------")
             return
 
     def encode_setting(self, field):
