@@ -77,6 +77,13 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {"detail": {"format": "%(name)s [%(levelname)s]: %(message)s"}},
+    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "detail"}},
+    "loggers": {"": {"handlers": ["console"], "level": "DEBUG", "propagate": True}},
+}
 LANGUAGE_CODE = "en-us"
 TIME_ZONE = "America/Chicago"
 USE_I18N = True

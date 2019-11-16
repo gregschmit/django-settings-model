@@ -1,4 +1,5 @@
 import importlib
+import logging
 import os
 from pathlib import Path
 from pytz import common_timezones
@@ -11,6 +12,9 @@ from django.utils.crypto import get_random_string
 from django.utils.translation import gettext_lazy as _
 
 from .settings import get_setting
+
+
+logger = logging.getLogger(__name__)
 
 
 class SettingsModel(models.Model):
@@ -85,7 +89,7 @@ class SettingsModel(models.Model):
         """
         See if we have settings. If so, read the actual settings values into it.
         """
-        print("settings_model: running settings init")
+        logger.info("running settings init")
         try:
             s = cls.objects.filter(is_active=True).first()
             if s:
@@ -93,10 +97,8 @@ class SettingsModel(models.Model):
             elif cls.CREATE_INITIAL:
                 s = cls()
                 s.read_settings()
-        except DBError as e:
-            print("settings_model: db not ready:")
-            print(e)
-            print("settings_model: ----------")
+        except DBError:
+            logger.warning("db not ready (error on {} model)".format(cls.__name__))
             return
 
     def read_settings(self):
@@ -122,7 +124,7 @@ class SettingsModel(models.Model):
 
         # write to settings file
         with open(self._get_settings_file(), "w") as f:
-            print("settings_model: writing config to {}".format(f.name))
+            logger.info("writing config to {}".format(f.name))
             f.write(text)
 
     @transaction.atomic
@@ -170,21 +172,22 @@ class SettingsModel(models.Model):
                 pass
 
         # touch files to signal reboot
-        print("settings_model: signalling webserver reboot by touching:")
+        logger.info("signalling webserver reboot")
+        logger.debug("  touching:")
         for f in touch_files:
             p = Path(f)
             if p.exists():
-                print("settings_model:  - {}".format(f))
+                logger.debug("   - {}".format(f))
                 p.touch()
             else:
-                print("settings_model:  - {} (skipped, doesn't exist)".format(f))
+                logger.debug("   - {} (skipped, doesn't exist)".format(f))
 
     def write_and_signal_reboot(self, commit=True):
         """
         Commit the configuration to disk and call `signal_reboot`.
         """
         if commit:
-            print("settings_model: committing config to disk...")
+            logger.info("committing config to disk...")
             self.write_settings()
 
         # signal reboot
@@ -229,17 +232,15 @@ class Settings(SettingsModel):
         Attempt to get the active settings, and if the secret key is set to the default
         one, then create a new randomized secret key.
         """
-        print("settings_model: attempting to check the secret key...")
+        logger.info("attempting to check the secret key...")
         try:
             s = cls.objects.filter(is_active=True).first()
             if s and s.secret_key == "not-a-very-good-secret":
                 chars = "abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)"
                 s.secret_key = get_random_string(50, chars)
                 s.save()
-        except DBError as e:
-            print("settings_model: db not ready:")
-            print(e)
-            print("settings_model: ----------")
+        except DBError:
+            logger.warning("db not ready (error on {} model)".format(cls.__name__))
             return
 
     def encode_setting(self, field):
