@@ -56,7 +56,7 @@ How to Use
 
 You can use the builtin ``Settings`` model by including this app (``settings_model``) in
 your ``INSTALLED_APPS`` and running migrations, or you can create your own custom
-settings model, inheriting from ``settings_model.models.SettingsModel``. If you want to
+settings model, inheriting from ``settings_model.base.SettingsModel``. If you want to
 build a custom settings Model, use the ``Settings`` model as a reference implementation.
 
 For the included ``Settings`` model, you need to add the following to the end of your
