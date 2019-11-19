@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 
 from django.conf import settings
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import models, transaction
 from django.db.utils import Error as DBError
 
@@ -14,19 +15,33 @@ from .settings import get_setting
 logger = logging.getLogger(__name__)
 
 
+class SettingsQuerySet(models.query.QuerySet):
+    """
+    Prevent deletion of active settings.
+    """
+
+    def delete(self, *args, **kwargs):
+        if self.filter(is_active=True) and not self.model.ALLOW_NO_SETTINGS:
+            raise PermissionDenied("Cannot delete settings which are currently active.")
+        return super().delete(*args, **kwargs)
+
+
 class SettingsModel(models.Model):
     """
     An abstract model that tracks settings and touches certain files on save to signal
-    the web server to reload. The ``FILE_NAME`` is a required property.
+    the web server to reload. Classes which inherit from this one should ensure that
+    they implement all methods which raise NotImplementedError.
     """
 
     name = models.CharField(default="Default", max_length=255, unique=True, blank=False)
     is_active = models.BooleanField(default=True)
 
+    objects = SettingsQuerySet.as_manager()
+
     # class constants, overridable by subclasses
     READABLE_INDEX = 2
     WRITABLE_INDEX = 3
-    CREATE_INITIAL = True
+    ALLOW_NO_SETTINGS = False
 
     class Meta:
         abstract = True
@@ -60,6 +75,13 @@ class SettingsModel(models.Model):
         """
         raise NotImplementedError
 
+    def encode_setting(self, field):
+        """
+        Given a field, convert the field to a string representing the Python code that
+        should be written to the settings file.
+        """
+        raise NotImplementedError
+
     def _get_settings_file(self):
         """
         The settings file should be saved next to the settings that are active. We will
@@ -74,13 +96,6 @@ class SettingsModel(models.Model):
         ).__file__
         return os.path.join(os.path.dirname(settings_file), self.__settings_filename__)
 
-    def encode_setting(self, field):
-        """
-        Given a field, convert the field to a string representing the Python code that
-        should be written to the settings file.
-        """
-        raise NotImplementedError
-
     @classmethod
     def init(cls):
         """
@@ -91,9 +106,15 @@ class SettingsModel(models.Model):
             s = cls.objects.filter(is_active=True).first()
             if s:
                 s.read_settings()
-            elif cls.CREATE_INITIAL:
-                s = cls()
-                s.read_settings()
+            elif not cls.ALLOW_NO_SETTINGS:
+                s = cls.objects.all()
+                if s:
+                    s = s.first()
+                    s.is_active = True
+                    s.save()
+                else:
+                    s = cls()
+                    s.read_settings()
         except DBError:
             logger.warning("db not ready (error on {} model)".format(cls.__name__))
             return
@@ -124,6 +145,25 @@ class SettingsModel(models.Model):
             logger.info("writing config to {}".format(f.name))
             f.write(text)
 
+    def delete_settings(self):
+        """
+        Delete the settings file.
+        """
+        os.remove(self._get_settings_file())
+
+    def clean(self):
+        """
+        Raise validation error if our `is_active` is False but there are no other
+        active settings.
+        """
+        if self.pk:
+            q = models.Q(pk=self.pk)
+        else:
+            q = models.Q()
+        other_actives = type(self).objects.filter(is_active=True).exclude(q)
+        if not (self.is_active or other_actives or self.ALLOW_NO_SETTINGS):
+            raise ValidationError("No other active settings, so these must be active.")
+
     @transaction.atomic
     def save(self, *args, **kwargs):
         """
@@ -133,19 +173,30 @@ class SettingsModel(models.Model):
         # extract custom kwargs
         reboot = kwargs.pop("reboot", True)
 
-        # deactivate extra settings if needed
+        # deactivate extra settings if needed; ensure settings rules are followed
         actives = type(self).objects.filter(is_active=True).exclude(pk=self.pk)
-        if self.is_active:
+        if self.is_active:  # if we are active, disable all others
             actives.update(is_active=False)
-        else:
+        else:  # if we are not active, then ensure one is active if we need one
             active = actives.first()
-            actives.exclude(pk=active.pk).update(is_active=False)
+            if active:  # disable extraneous settings
+                actives.exclude(pk=active.pk).update(is_active=False)
+            else:  # set self to active if a settings is required, otherwise delete
+                if self.ALLOW_NO_SETTINGS:
+                    self.delete_settings()
+                    transaction.on_commit(lambda: self.signal_reboot())
+                else:
+                    self.is_active = True
 
-        # if we are saving an active settings instance, reboot the web server
-        if self.is_active:
-            if reboot:
-                transaction.on_commit(lambda: self.write_and_signal_reboot())
+        if self.is_active and reboot:
+            transaction.on_commit(lambda: self.write_and_signal_reboot())
+
         return super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        if self.is_active and not self.ALLOW_NO_SETTINGS:
+            raise PermissionDenied("Cannot delete settings which are currently active.")
+        return super().delete(*args, **kwargs)
 
     @staticmethod
     def signal_reboot():
