@@ -99,13 +99,26 @@ class SettingsModel(models.Model):
     @classmethod
     def init(cls):
         """
-        See if we have settings. If so, read the actual settings values into it.
+        See if we have settings; then:
+         - If so, read the actual settings values into it, to ensure that the model
+           always reflects reality. (Note: if you notice that settings are always
+           "reverted", this usually means there is a problem with your `encode_setting`
+           method, or possibly your core `settings.py` is not importing the
+           `__settings_filename__` properly.) If other active settings exist, then
+           `save` will be called t ensure the file is written and other settings are
+           deactivated.
+         - If not, and `ALLOW_NO_SETTINGS` is `False`, then either activate the first
+           settings we find, or, if there are no settings objects, create one.
         """
         logger.info("running settings init")
         try:
             s = cls.objects.filter(is_active=True).first()
             if s:
                 s.read_settings()
+                if cls.objects.filter(is_active=True).exclude(pk=s.pk):
+                    # need to invalidate other settings and ensure the settings file
+                    # maps to this instance, so call the save() method.
+                    s.save()
             elif not cls.ALLOW_NO_SETTINGS:
                 s = cls.objects.all()
                 if s:
@@ -115,6 +128,7 @@ class SettingsModel(models.Model):
                 else:
                     s = cls()
                     s.read_settings()
+                    s.save()
         except DBError:
             logger.warning("db not ready (error on {} model)".format(cls.__name__))
             return
