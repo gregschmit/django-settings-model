@@ -9,21 +9,13 @@ class SettingsAdmin(admin.ModelAdmin):
     list_display = (
         ("name",)
         + list_filter
-        + ("debug_mode", "secret_key", "time_zone", "append_slash", "allowed_hosts")
+        + ("debug_mode", "secret_key", "append_slash", "allowed_hosts")
     )
     search_fields = list_display
     fieldsets = (
         (None, {"fields": ("name", "is_active")}),
         (
             "Settings",
-            {
-                "fields": (
-                    "debug_mode",
-                    "secret_key",
-                    "time_zone",
-                    "append_slash",
-                    "allowed_hosts",
-                )
-            },
+            {"fields": ("debug_mode", "secret_key", "append_slash", "allowed_hosts",)},
         ),
     )

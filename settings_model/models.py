@@ -1,5 +1,4 @@
 import logging
-from pytz import common_timezones
 
 from django.db import models
 from django.db.utils import Error as DBError
@@ -19,8 +18,6 @@ class Settings(SettingsModel):
 
     debug_mode = models.BooleanField(default=True)
     secret_key = models.CharField(max_length=255, blank=True)
-    tz_choices = [(x, x) for x in common_timezones]
-    time_zone = models.CharField(max_length=255, blank=True, choices=tz_choices)
     append_slash = models.BooleanField(default=False)
     allowed_hosts = models.CharField(
         max_length=255,
@@ -36,7 +33,6 @@ class Settings(SettingsModel):
     __settings_map__ = [
         ("debug_mode", "DEBUG", True, True),
         ("secret_key", "SECRET_KEY", True, True),
-        ("time_zone", "TIME_ZONE", True, True),
         ("append_slash", "APPEND_SLASH", True, True),
         ("allowed_hosts", "ALLOWED_HOSTS", True, True),
     ]
